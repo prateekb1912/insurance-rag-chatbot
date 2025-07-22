@@ -4,6 +4,7 @@ from fastapi import FastAPI, UploadFile, File
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Pinecone
+from langchain_openai import OpenAIEmbeddings
 import os
 from pinecone import Pinecone
 from dotenv import load_dotenv
@@ -14,6 +15,7 @@ load_dotenv()
 
 pinecone = Pinecone(api_key=os.getenv("PINECONE_APIKEY"))
 index = pinecone.Index(host=os.getenv("PINECONE_HOST"))
+embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_APIKEY"), model="text-embedding-3-small", dimensions=1024)
 app = FastAPI()
 
 @app.post("/ingest-from-doc")
@@ -27,15 +29,20 @@ async def ingest_from_doc(file: UploadFile = File(...)):
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     chunks = splitter.split_documents(docs)
 
-    records = [
-        {
+    for chunk in chunks:
+        embedding = embeddings.embed_query(chunk.page_content)
+        
+        record = {
             "id": str(uuid4()),
-            "chunk_text": text.page_content
+            "values": embedding,
+            "metadata": {
+                "text": chunk.page_content,
+                **chunk.metadata
+            }
         }
-            for text in chunks
-    ]
+        index.upsert([record], namespace="support_docs")
 
-    index.upsert_records("__default__", records)
+    os.remove(tmp_path)
     
     return {
         "message": "Document ingested successfully",
@@ -51,14 +58,19 @@ async def ingest_from_url():
     for faq_list in faq_data:
         records = []
         for faq in faq_list:
+            embedding = embeddings.embed_query(f"{faq['title']} - {faq['content']}")
+            
             record = {
                 "id": str(uuid4()),
-                "text": faq["content"],
-                "metadata": faq["title"]
+                "values": embedding,
+                "metadata":{
+                    "title": faq["title"],
+                    "source_url": faq["url"]
+                }
             }
             records.append(record)
-
-        index.upsert_records("__default__", records)
+        print(len(records))
+        index.upsert(records, namespace="support_docs")
 
     return {
         "message": "URL ingested successfully",
