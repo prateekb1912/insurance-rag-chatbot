@@ -21,13 +21,10 @@ def scrape_angelone_support_url(url: str):
 def get_all_angelone_support_urls():
     response = requests.get("https://www.angelone.in/support")
     soup = BeautifulSoup(response.text, 'html.parser')
-    categories =  soup.find('div', class_='grid-container').find_all('div', class_='grid')
-
-    final_faq_data = []
+    categories =  soup.find('div', class_='cat-grid').find_all('div', class_='grid')
 
     for category in categories:
         category_url = category.find('a')['href']
-        print(category_url)
 
         resp = requests.get(category_url)
         soup = BeautifulSoup(resp.text, 'html.parser')
@@ -37,6 +34,4 @@ def get_all_angelone_support_urls():
         for subcategory in subcategories:
             url = subcategory['href']
             faq_data = scrape_angelone_support_url(url)
-            
-
-    return final_faq_data
+            yield faq_data

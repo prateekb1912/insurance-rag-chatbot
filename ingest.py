@@ -48,18 +48,17 @@ async def ingest_from_doc(file: UploadFile = File(...)):
 async def ingest_from_url():
     faq_data = get_all_angelone_support_urls()
 
-    records = [
-        {
-            "id": str(uuid4()),
-            "chunk_text": faq["content"],
-            "metadata": {
-                "title": faq["title"]
+    for faq_list in faq_data:
+        records = []
+        for faq in faq_list:
+            record = {
+                "id": str(uuid4()),
+                "text": faq["content"],
+                "metadata": faq["title"]
             }
-        }
-        for faq in faq_data
-    ]
+            records.append(record)
 
-    index.upsert_records("__default__", records)
+        index.upsert_records("__default__", records)
 
     return {
         "message": "URL ingested successfully",
