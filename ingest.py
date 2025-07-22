@@ -36,7 +36,7 @@ async def ingest_from_doc(file: UploadFile = File(...)):
             "id": str(uuid4()),
             "values": embedding,
             "metadata": {
-                "text": chunk.page_content,
+                "page_content": chunk.page_content,
                 **chunk.metadata
             }
         }
@@ -65,7 +65,8 @@ async def ingest_from_url():
                 "values": embedding,
                 "metadata":{
                     "title": faq["title"],
-                    "source_url": faq["url"]
+                    "source_url": faq["url"],
+                    "page_content": faq["content"]
                 }
             }
             records.append(record)
