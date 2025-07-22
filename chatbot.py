@@ -1,17 +1,14 @@
 import chainlit as cl
 import os
 
-
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
 from langgraph.graph import StateGraph, END
 from pinecone import Pinecone
-from typing import TypedDict, Literal
+from typing import TypedDict
 
 load_dotenv()
-
-chat_history = []
 
 class ChatState(TypedDict):
     user_input: str
@@ -134,8 +131,6 @@ def build_rag_agent():
 
 @cl.on_message
 async def handler(message: cl.Message):
-    global chat_history
     rag_agent = build_rag_agent()
     result = await rag_agent.ainvoke({"user_input": message.content, "chat_history": []})
-    chat_history.append(result["chat_history"])
     await cl.Message(content=result["response"]).send()
