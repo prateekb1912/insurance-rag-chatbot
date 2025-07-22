@@ -1,13 +1,14 @@
 # api.py
 from uuid import uuid4
 from fastapi import FastAPI, UploadFile, File, Request
-from langchain_community.document_loaders import PyPDFLoader, UnstructuredURLLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Pinecone
 import os
 from pinecone import Pinecone
 from dotenv import load_dotenv
 import tempfile
+from scraper import scrape_angelone_support_url
 
 load_dotenv()
 
@@ -42,26 +43,26 @@ async def ingest_from_doc(file: UploadFile = File(...)):
     }
 
 
+# Currently only for AngelOne Support URLs
 @app.post("/ingest-from-url")
 async def ingest_from_url(request: Request):
     url = request.url
-    loader = UnstructuredURLLoader(urls=[url], headers={"User-Agent": "Mozilla/5.0"})
-    docs = loader.load()
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-    chunks = splitter.split_documents(docs)
-    
+    faq_data = scrape_angelone_support_url(url)
+
     records = [
         {
             "id": str(uuid4()),
-            "chunk_text": text.page_content
+            "chunk_text": faq["content"],
+            "metadata": {
+                "title": faq["title"]
+            }
         }
-        for text in chunks
+        for faq in faq_data
     ]
 
     index.upsert_records("__default__", records)
-    
+
     return {
         "message": "URL ingested successfully",
-        "chunks": len(chunks),
-        "url": url
+        "records": len(records)
     }
