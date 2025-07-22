@@ -14,7 +14,8 @@ def scrape_angelone_support_url(url: str):
         tab_content = tab.find('div', class_='tab-content').text.strip()
         faq_data.append({
             "title": tab_title,
-            "content": tab_content
+            "content": tab_content,
+            "url": url
         })
     return faq_data
 
