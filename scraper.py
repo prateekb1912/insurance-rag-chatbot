@@ -33,12 +33,10 @@ def get_all_angelone_support_urls():
         soup = BeautifulSoup(resp.text, 'html.parser')
 
         subcategories = soup.find('div', class_='list-item').find_all('a')
-        print(subcategories)
 
         for subcategory in subcategories:
             url = subcategory['href']
             faq_data = scrape_angelone_support_url(url)
-            print(faq_data)
-            final_faq_data.extend(faq_data)
+            
 
     return final_faq_data

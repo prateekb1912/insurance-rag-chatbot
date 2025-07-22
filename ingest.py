@@ -1,6 +1,6 @@
 # api.py
 from uuid import uuid4
-from fastapi import FastAPI, UploadFile, File, Request
+from fastapi import FastAPI, UploadFile, File
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Pinecone
@@ -8,7 +8,7 @@ import os
 from pinecone import Pinecone
 from dotenv import load_dotenv
 import tempfile
-from scraper import scrape_angelone_support_url
+from scraper import get_all_angelone_support_urls
 
 load_dotenv()
 
@@ -45,9 +45,8 @@ async def ingest_from_doc(file: UploadFile = File(...)):
 
 # Currently only for AngelOne Support URLs
 @app.post("/ingest-from-url")
-async def ingest_from_url(request: Request):
-    url = request.url
-    faq_data = scrape_angelone_support_url(url)
+async def ingest_from_url():
+    faq_data = get_all_angelone_support_urls()
 
     records = [
         {
