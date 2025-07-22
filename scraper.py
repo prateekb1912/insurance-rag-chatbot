@@ -16,7 +16,29 @@ def scrape_angelone_support_url(url: str):
             "title": tab_title,
             "content": tab_content
         })
-
     return faq_data
 
-print(scrape_angelone_support_url("https://www.angelone.in/support/add-and-withdraw-funds/quarterly-settlement-sebi-payout"))
+def get_all_angelone_support_urls():
+    response = requests.get("https://www.angelone.in/support")
+    soup = BeautifulSoup(response.text, 'html.parser')
+    categories =  soup.find('div', class_='grid-container').find_all('div', class_='grid')
+
+    final_faq_data = []
+
+    for category in categories:
+        category_url = category.find('a')['href']
+        print(category_url)
+
+        resp = requests.get(category_url)
+        soup = BeautifulSoup(resp.text, 'html.parser')
+
+        subcategories = soup.find('div', class_='list-item').find_all('a')
+        print(subcategories)
+
+        for subcategory in subcategories:
+            url = subcategory['href']
+            faq_data = scrape_angelone_support_url(url)
+            print(faq_data)
+            final_faq_data.extend(faq_data)
+
+    return final_faq_data
